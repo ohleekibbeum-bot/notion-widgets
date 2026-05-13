@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Countdown Widget</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; font-family: 'Inter', sans-serif;
+  }
+  body.dark { background: #1a1a1a; color: #e8e8e8; }
+  body.light { background: #fff; color: #1a1a1a; }
+  body.gradient { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #e8e8e8; }
+
+  .title {
+    font-size: 1rem; font-weight: 400; opacity: 0.7;
+    margin-bottom: 12px; text-align: center;
+  }
+  .countdown {
+    display: flex; gap: 16px; align-items: center;
+  }
+  .unit {
+    text-align: center;
+  }
+  .unit-value {
+    font-size: 2.6rem; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .unit-label {
+    font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 1px; opacity: 0.5; margin-top: 4px;
+  }
+  .separator {
+    font-size: 2rem; opacity: 0.3; font-weight: 300;
+    margin-top: -12px;
+  }
+  .expired {
+    font-size: 1.4rem; font-weight: 600;
+  }
+  .placeholder {
+    color: #888; font-size: 14px; text-align: center; padding: 20px;
+  }
+  .placeholder span { font-size: 2rem; display: block; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<script>
+  const params = new URLSearchParams(location.search);
+  const target = params.get('target');
+  const title = params.get('title') || '';
+  const theme = params.get('theme') || 'dark';
+  const color = params.get('color') || '#6c5ce7';
+
+  document.body.classList.add(theme);
+
+  if (!target) {
+    document.body.innerHTML = '<div class="placeholder"><span>⏳</span>목표 날짜를 설정해주세요<br><small style="color:#555">?target=2026-12-31</small></div>';
+  } else {
+    const targetDate = new Date(target + 'T00:00:00');
+
+    if (title) {
+      const titleEl = document.createElement('div');
+      titleEl.className = 'title';
+      titleEl.textContent = title;
+      document.body.appendChild(titleEl);
+    }
+
+    const container = document.createElement('div');
+    container.className = 'countdown';
+    document.body.appendChild(container);
+
+    function update() {
+      const now = new Date();
+      const diff = targetDate - now;
+
+      if (diff <= 0) {
+        container.innerHTML = '<div class="expired" style="color:' + color + '">🎉 목표 날짜 도달!</div>';
+        return;
+      }
+
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+
+      container.innerHTML = [
+        { v: d, l: '일' },
+        { v: h, l: '시간' },
+        { v: m, l: '분' },
+        { v: s, l: '초' }
+      ].map((u, i) => `
+        ${i > 0 ? '<div class="separator">:</div>' : ''}
+        <div class="unit">
+          <div class="unit-value" style="color:${i === 0 ? color : 'inherit'}">${String(u.v).padStart(2, '0')}</div>
+          <div class="unit-label">${u.l}</div>
+        </div>
+      `).join('');
+    }
+
+    update();
+    setInterval(update, 1000);
+  }
+</script>
+</body>
+</html>

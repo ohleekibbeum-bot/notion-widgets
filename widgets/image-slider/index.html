@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Slider Widget</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+  .slider {
+    position: relative; width: 100%; height: 100%; overflow: hidden;
+  }
+  .slide {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    opacity: 0; transition: opacity 0.8s ease;
+  }
+  .slide.active { opacity: 1; }
+  .slide.slide-effect {
+    transition: transform 0.6s ease, opacity 0.6s ease;
+    transform: translateX(100%);
+  }
+  .slide.slide-effect.active { transform: translateX(0); opacity: 1; }
+  .slide.slide-effect.prev { transform: translateX(-100%); opacity: 0; }
+  .slide img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .dots {
+    position: absolute; bottom: 10px; left: 50%;
+    transform: translateX(-50%); display: flex; gap: 6px; z-index: 2;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.4); cursor: pointer;
+    transition: background 0.3s;
+  }
+  .dot.active { background: #fff; }
+  .placeholder {
+    color: #888; font-family: 'Inter', sans-serif;
+    font-size: 14px; text-align: center; padding: 20px;
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; background: #1a1a1a;
+  }
+  .placeholder span { font-size: 2rem; display: block; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<script>
+  const params = new URLSearchParams(location.search);
+  const imagesStr = params.get('images');
+  const interval = parseInt(params.get('interval')) || 3000;
+  const effect = params.get('effect') || 'fade';
+  const radius = params.get('radius') || '0';
+
+  if (!imagesStr) {
+    document.body.innerHTML = '<div class="placeholder"><span>🖼️</span>이미지 URL을 설정해주세요<br><small style="color:#555">?images=url1,url2,url3</small></div>';
+  } else {
+    const urls = imagesStr.split(',').map(u => u.trim()).filter(Boolean);
+    if (urls.length === 0) {
+      document.body.innerHTML = '<div class="placeholder"><span>🖼️</span>유효한 이미지 URL이 없습니다</div>';
+    } else {
+      const slider = document.createElement('div');
+      slider.className = 'slider';
+      slider.style.borderRadius = radius + 'px';
+
+      urls.forEach((url, i) => {
+        const slide = document.createElement('div');
+        slide.className = `slide ${effect === 'slide' ? 'slide-effect' : ''} ${i === 0 ? 'active' : ''}`;
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = `Slide ${i + 1}`;
+        slide.appendChild(img);
+        slider.appendChild(slide);
+      });
+
+      if (urls.length > 1) {
+        const dots = document.createElement('div');
+        dots.className = 'dots';
+        urls.forEach((_, i) => {
+          const dot = document.createElement('div');
+          dot.className = `dot ${i === 0 ? 'active' : ''}`;
+          dot.onclick = () => goTo(i);
+          dots.appendChild(dot);
+        });
+        slider.appendChild(dots);
+      }
+
+      document.body.appendChild(slider);
+
+      let current = 0;
+      const slides = slider.querySelectorAll('.slide');
+      const dotEls = slider.querySelectorAll('.dot');
+
+      function goTo(idx) {
+        if (effect === 'slide') {
+          slides[current].classList.remove('active');
+          slides[current].classList.add('prev');
+        } else {
+          slides[current].classList.remove('active');
+        }
+        if (dotEls.length) dotEls[current].classList.remove('active');
+        current = idx;
+        if (effect === 'slide') {
+          slides.forEach(s => s.classList.remove('prev'));
+        }
+        slides[current].classList.add('active');
+        if (dotEls.length) dotEls[current].classList.add('active');
+      }
+
+      if (urls.length > 1) {
+        setInterval(() => goTo((current + 1) % urls.length), interval);
+      }
+    }
+  }
+</script>
+</body>
+</html>

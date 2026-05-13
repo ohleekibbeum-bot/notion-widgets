@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notion Widgets - 노션 위젯 모음</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>Notion Widgets</h1>
+    <p>노션에 임베드할 수 있는 다양한 위젯을 만들어보세요</p>
+  </header>
+
+  <div class="how-to-use">
+    <details>
+      <summary>노션에서 사용하는 방법</summary>
+      <ol>
+        <li>아래에서 원하는 위젯을 선택하세요</li>
+        <li><strong>⚙️ 설정</strong> 버튼으로 옵션을 조정하세요</li>
+        <li><strong>📋 URL 복사</strong> 버튼을 클릭하세요</li>
+        <li>노션에서 <code>/embed</code> 블록을 추가하세요</li>
+        <li>복사한 URL을 붙여넣기 하면 완료!</li>
+      </ol>
+    </details>
+  </div>
+
+  <div class="widget-grid" id="widget-grid"></div>
+
+  <div class="toast" id="toast"></div>
+
+  <footer class="footer">
+    Notion Widgets &mdash; 무료 오픈소스 위젯 모음
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
