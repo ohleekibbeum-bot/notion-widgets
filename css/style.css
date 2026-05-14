@@ -230,6 +230,31 @@ body {
   border: none;
 }
 
+/* GIF Chips */
+.gif-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gif-chip {
+  padding: 4px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.gif-chip:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--blue);
+}
+
 /* Card Config Panel */
 .widget-config {
   padding: 0 18px;

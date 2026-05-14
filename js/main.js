@@ -1,5 +1,26 @@
 const BASE_URL = location.origin + location.pathname.replace(/\/[^/]*$/, '');
 
+// 예시 미리보기 파라미터 (귀여운 GIF & 이미지 포함)
+const DEMO = {
+  'gif-embed': '?url=https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif&radius=12&bg=%23f7f6f3',
+  'clock': '?type=digital&theme=notion',
+  'countdown': '?target=2027-01-01&title=2027년 새해까지&theme=notion&color=%232eaadc',
+  'progress-bar': '?value=73&max=100&label=프로젝트 진행률&color=%232eaadc&theme=notion',
+  'quote': '?text=작은 것에도 감사하면 큰 행복이 찾아옵니다&author=속담&theme=notion&font=serif',
+  'image-slider': '?images=https://picsum.photos/seed/cute1/600/300,https://picsum.photos/seed/cute2/600/300,https://picsum.photos/seed/cute3/600/300&interval=2500&radius=4',
+  'weather': '?lat=37.5665&lon=126.978&theme=notion'
+};
+
+// 추천 GIF 모음 (설정 패널에서 빠르게 선택 가능)
+const SAMPLE_GIFS = [
+  { label: '🐱 고양이', url: 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif' },
+  { label: '🐶 강아지', url: 'https://media.giphy.com/media/mCRJDo24UvJMA/giphy.gif' },
+  { label: '🌸 벚꽃', url: 'https://media.giphy.com/media/lo4Mz1IFKLOQE/giphy.gif' },
+  { label: '✨ 반짝이', url: 'https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif' },
+  { label: '🌈 무지개', url: 'https://media.giphy.com/media/SKGo6OYe24EBG/giphy.gif' },
+  { label: '💖 하트', url: 'https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif' }
+];
+
 const widgets = [
   {
     id: 'gif-embed',
@@ -124,9 +145,15 @@ function renderWidgets() {
         </div>
       </div>
       <div class="widget-preview">
-        <iframe src="widgets/${w.id}/" loading="lazy" id="preview-${w.id}"></iframe>
+        <iframe src="widgets/${w.id}/${DEMO[w.id] || ''}" loading="lazy" id="preview-${w.id}"></iframe>
       </div>
       <div class="widget-config" id="config-${w.id}">
+        ${w.id === 'gif-embed' ? `
+          <div class="config-group">
+            <label>추천 GIF 빠른 선택</label>
+            <div class="gif-chips">${SAMPLE_GIFS.map(g => `<button class="gif-chip" onclick="selectGif('${g.url}')">${g.label}</button>`).join('')}</div>
+          </div>
+        ` : ''}
         ${w.configs.map(c => `
           <div class="config-group">
             <label>${c.label}</label>
@@ -151,6 +178,14 @@ function renderWidgets() {
       el.addEventListener('input', debounce(() => updatePreview(w.id), 500));
     });
   });
+}
+
+function selectGif(url) {
+  const input = document.querySelector('#config-gif-embed input[name="url"]');
+  if (input) {
+    input.value = url;
+    updatePreview('gif-embed');
+  }
 }
 
 function toggleConfig(id) {
