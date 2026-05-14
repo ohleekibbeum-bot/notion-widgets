@@ -35,6 +35,27 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- GIF 검색 모달 -->
+  <div class="modal-overlay" id="search-modal" onclick="if(event.target===this)closeSearchModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>🔍 GIF 검색</h3>
+        <button class="modal-close" onclick="closeSearchModal()">&times;</button>
+      </div>
+      <div class="modal-search">
+        <input type="text" id="search-input" placeholder="검색어를 입력하세요... (예: 고양이, 축하)" oninput="handleSearchInput(event)">
+      </div>
+      <div class="modal-chips" id="search-chips"></div>
+      <div class="modal-results-label" id="search-results-label">🔥 인기 GIF</div>
+      <div class="modal-results" id="search-results">
+        <div class="search-hint">검색어를 입력하거나 추천 태그를 클릭하세요</div>
+      </div>
+      <div class="modal-footer">
+        <span class="giphy-credit">Powered by GIPHY</span>
+      </div>
+    </div>
+  </div>
+
   <footer class="footer">
     Notion Widgets &middot; 무료 오픈소스 위젯 모음
   </footer>

@@ -1,6 +1,11 @@
 const BASE_URL = location.origin + location.pathname.replace(/\/[^/]*$/, '');
 
-// 예시 미리보기 파라미터 (귀여운 GIF & 이미지 포함)
+// Giphy API (데모 키 — 프로덕션에서는 developers.giphy.com에서 발급)
+const GIPHY_API_KEY = 'dc6zaTOxFJmzC';
+const GIPHY_SEARCH = `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&limit=20&rating=g&lang=ko`;
+const GIPHY_TRENDING = `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=20&rating=g`;
+
+// 예시 미리보기 파라미터
 const DEMO = {
   'gif-embed': '?url=https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif&radius=12&bg=%23f7f6f3',
   'clock': '?type=digital&theme=notion',
@@ -11,14 +16,18 @@ const DEMO = {
   'weather': '?lat=37.5665&lon=126.978&theme=notion'
 };
 
-// 추천 GIF 모음 (설정 패널에서 빠르게 선택 가능)
-const SAMPLE_GIFS = [
-  { label: '🐱 고양이', url: 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif' },
-  { label: '🐶 강아지', url: 'https://media.giphy.com/media/mCRJDo24UvJMA/giphy.gif' },
-  { label: '🌸 벚꽃', url: 'https://media.giphy.com/media/lo4Mz1IFKLOQE/giphy.gif' },
-  { label: '✨ 반짝이', url: 'https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif' },
-  { label: '🌈 무지개', url: 'https://media.giphy.com/media/SKGo6OYe24EBG/giphy.gif' },
-  { label: '💖 하트', url: 'https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif' }
+// 추천 검색어
+const SUGGESTED_SEARCHES = [
+  { label: '🐱 고양이', q: 'cute cat' },
+  { label: '🐶 강아지', q: 'cute dog' },
+  { label: '🌸 꽃', q: 'flower aesthetic' },
+  { label: '✨ 반짝이', q: 'sparkle' },
+  { label: '💖 하트', q: 'heart love' },
+  { label: '🌈 무지개', q: 'rainbow' },
+  { label: '🎉 축하', q: 'celebration' },
+  { label: '☕ 커피', q: 'coffee cozy' },
+  { label: '🌙 달', q: 'moon night' },
+  { label: '🔥 불꽃', q: 'fire flame' }
 ];
 
 const widgets = [
@@ -116,6 +125,10 @@ const widgets = [
   }
 ];
 
+// ===== 검색 모달 상태 =====
+let searchTarget = null; // 'gif-embed' 또는 'image-slider'
+let searchTimer = null;
+
 function buildWidgetURL(widget) {
   const params = new URLSearchParams();
   const form = document.getElementById(`config-${widget.id}`);
@@ -150,8 +163,18 @@ function renderWidgets() {
       <div class="widget-config" id="config-${w.id}">
         ${w.id === 'gif-embed' ? `
           <div class="config-group">
-            <label>추천 GIF 빠른 선택</label>
-            <div class="gif-chips">${SAMPLE_GIFS.map(g => `<button class="gif-chip" onclick="selectGif('${g.url}')">${g.label}</button>`).join('')}</div>
+            <label>GIF 검색</label>
+            <button class="btn-search" onclick="openSearchModal('gif-embed')">🔍 GIF 검색하기...</button>
+          </div>
+          <div class="config-group">
+            <label>추천</label>
+            <div class="gif-chips">${SUGGESTED_SEARCHES.slice(0, 6).map(s => `<button class="gif-chip" onclick="quickSearch('${s.q}', 'gif-embed')">${s.label}</button>`).join('')}</div>
+          </div>
+        ` : ''}
+        ${w.id === 'image-slider' ? `
+          <div class="config-group">
+            <label>이미지 검색</label>
+            <button class="btn-search" onclick="openSearchModal('image-slider')">🔍 GIF/이미지 검색해서 추가...</button>
           </div>
         ` : ''}
         ${w.configs.map(c => `
@@ -178,6 +201,124 @@ function renderWidgets() {
       el.addEventListener('input', debounce(() => updatePreview(w.id), 500));
     });
   });
+}
+
+// ===== 검색 모달 =====
+function openSearchModal(target) {
+  searchTarget = target;
+  const modal = document.getElementById('search-modal');
+  const input = document.getElementById('search-input');
+  const results = document.getElementById('search-results');
+  const chips = document.getElementById('search-chips');
+
+  // 추천 검색어 칩
+  chips.innerHTML = SUGGESTED_SEARCHES.map(s =>
+    `<button class="gif-chip" onclick="doSearch('${s.q}')">${s.label}</button>`
+  ).join('');
+
+  input.value = '';
+  results.innerHTML = '<div class="search-hint">검색어를 입력하거나 추천 태그를 클릭하세요</div>';
+  modal.classList.add('active');
+  setTimeout(() => input.focus(), 100);
+
+  // 트렌딩 GIF 로드
+  loadTrending();
+}
+
+function closeSearchModal() {
+  document.getElementById('search-modal').classList.remove('active');
+  searchTarget = null;
+}
+
+function handleSearchInput(e) {
+  const q = e.target.value.trim();
+  clearTimeout(searchTimer);
+  if (q.length < 2) {
+    if (q.length === 0) loadTrending();
+    return;
+  }
+  searchTimer = setTimeout(() => doSearch(q), 400);
+}
+
+function doSearch(query) {
+  const input = document.getElementById('search-input');
+  input.value = query;
+
+  const results = document.getElementById('search-results');
+  results.innerHTML = '<div class="search-loading"><div class="spinner"></div> 검색 중...</div>';
+
+  fetch(`${GIPHY_SEARCH}&q=${encodeURIComponent(query)}`)
+    .then(r => r.json())
+    .then(data => renderSearchResults(data.data))
+    .catch(() => {
+      results.innerHTML = '<div class="search-hint">검색에 실패했습니다. 다시 시도해주세요.</div>';
+    });
+}
+
+function loadTrending() {
+  const results = document.getElementById('search-results');
+  results.innerHTML = '<div class="search-loading"><div class="spinner"></div> 인기 GIF 로딩 중...</div>';
+
+  fetch(GIPHY_TRENDING)
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('search-results-label').textContent = '🔥 인기 GIF';
+      renderSearchResults(data.data);
+    })
+    .catch(() => {
+      results.innerHTML = '<div class="search-hint">GIF를 불러올 수 없습니다</div>';
+    });
+}
+
+function renderSearchResults(gifs) {
+  const results = document.getElementById('search-results');
+  const label = document.getElementById('search-results-label');
+
+  if (!gifs || gifs.length === 0) {
+    results.innerHTML = '<div class="search-hint">검색 결과가 없습니다. 다른 키워드를 시도해보세요.</div>';
+    return;
+  }
+
+  if (document.getElementById('search-input').value.trim()) {
+    label.textContent = `검색 결과 (${gifs.length}개)`;
+  }
+
+  results.innerHTML = gifs.map(gif => {
+    const preview = gif.images.fixed_height_small.url;
+    const full = gif.images.original.url;
+    const title = gif.title || '';
+    return `
+      <div class="search-item" onclick="selectSearchResult('${full}')" title="${title}">
+        <img src="${preview}" alt="${title}" loading="lazy">
+      </div>
+    `;
+  }).join('');
+}
+
+function selectSearchResult(url) {
+  if (searchTarget === 'gif-embed') {
+    const input = document.querySelector('#config-gif-embed input[name="url"]');
+    if (input) {
+      input.value = url;
+      updatePreview('gif-embed');
+    }
+  } else if (searchTarget === 'image-slider') {
+    const input = document.querySelector('#config-image-slider input[name="images"]');
+    if (input) {
+      const current = input.value.trim();
+      input.value = current ? current + ', ' + url : url;
+      updatePreview('image-slider');
+    }
+  }
+
+  closeSearchModal();
+  showToast('GIF가 선택되었습니다!');
+}
+
+function quickSearch(query, target) {
+  searchTarget = target;
+  openSearchModal(target);
+  setTimeout(() => doSearch(query), 200);
 }
 
 function selectGif(url) {
@@ -234,3 +375,8 @@ function debounce(fn, ms) {
 }
 
 document.addEventListener('DOMContentLoaded', renderWidgets);
+
+// ESC로 모달 닫기
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeSearchModal();
+});
