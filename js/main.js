@@ -283,16 +283,30 @@ function renderSearchResults(gifs) {
     label.textContent = `검색 결과 (${gifs.length}개)`;
   }
 
-  results.innerHTML = gifs.map(gif => {
+  // data-url + 이벤트 위임으로 특수문자 문제 방지
+  results.innerHTML = gifs.map((gif, i) => {
     const preview = gif.images.fixed_height_small.url;
-    const full = gif.images.original.url;
-    const title = gif.title || '';
+    const title = (gif.title || '').replace(/"/g, '&quot;');
     return `
-      <div class="search-item" onclick="selectSearchResult('${full}')" title="${title}">
+      <div class="search-item" data-index="${i}" title="${title}">
         <img src="${preview}" alt="${title}" loading="lazy">
       </div>
     `;
   }).join('');
+
+  // 검색 결과 데이터 저장
+  results._gifData = gifs;
+
+  // 클릭 이벤트 위임
+  results.onclick = function(e) {
+    const item = e.target.closest('.search-item');
+    if (!item) return;
+    const idx = parseInt(item.dataset.index);
+    const gif = results._gifData[idx];
+    if (gif) {
+      selectSearchResult(gif.images.original.url);
+    }
+  };
 }
 
 function selectSearchResult(url) {
