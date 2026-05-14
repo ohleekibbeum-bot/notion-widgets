@@ -5,61 +5,81 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Clock Widget</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; }
   body {
     display: flex; align-items: center; justify-content: center;
     flex-direction: column; font-family: 'Inter', sans-serif;
   }
-  body.dark { background: #1a1a1a; color: #e8e8e8; }
-  body.light { background: #fff; color: #1a1a1a; }
+  body.light { background: #fff; color: #37352f; }
+  body.dark { background: #191919; color: #e8e8e3; }
+  body.notion { background: #f7f6f3; color: #37352f; }
 
   /* Digital */
   .digital-time {
-    font-size: 3.5rem;
-    font-weight: 600;
-    letter-spacing: 2px;
+    font-size: 3.2rem; font-weight: 700;
+    letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
   }
-  .digital-date {
-    font-size: 0.95rem;
-    opacity: 0.5;
-    margin-top: 4px;
-    font-weight: 300;
+  body.notion .digital-time { color: #37352f; }
+  body.dark .digital-time { color: #ffffffcf; }
+
+  .digital-seconds {
+    font-size: 1.4rem; font-weight: 300;
+    opacity: 0.4; vertical-align: super; margin-left: 2px;
   }
+  .digital-date {
+    font-size: 0.82rem; color: #787774; margin-top: 4px; font-weight: 400;
+  }
+  body.dark .digital-date { color: #ffffff5e; }
 
   /* Analog */
-  .analog { position: relative; width: 140px; height: 140px; }
+  .analog { position: relative; width: 130px; height: 130px; }
   .analog-face {
     width: 100%; height: 100%; border-radius: 50%;
-    border: 2px solid currentColor; position: relative;
+    position: relative;
   }
+  body.light .analog-face,
+  body.notion .analog-face { border: 1.5px solid #e3e3e0; background: #fff; }
+  body.dark .analog-face { border: 1.5px solid #333; background: #222; }
+
   .hand {
     position: absolute; bottom: 50%; left: 50%;
-    transform-origin: bottom center;
-    border-radius: 2px;
+    transform-origin: bottom center; border-radius: 1px;
   }
-  .dark .hand { background: #e8e8e8; }
-  .light .hand { background: #1a1a1a; }
-  .hand-hour { width: 3px; height: 30%; margin-left: -1.5px; }
-  .hand-minute { width: 2px; height: 40%; margin-left: -1px; }
-  .hand-second { width: 1px; height: 44%; margin-left: -0.5px; background: #e74c3c !important; }
+  body.light .hand, body.notion .hand { background: #37352f; }
+  body.dark .hand { background: #e8e8e3; }
+  .hand-hour { width: 2.5px; height: 28%; margin-left: -1.25px; }
+  .hand-minute { width: 1.5px; height: 38%; margin-left: -0.75px; }
+  .hand-second { width: 1px; height: 42%; margin-left: -0.5px; }
+  body.light .hand-second, body.notion .hand-second { background: #d44c47; }
+  body.dark .hand-second { background: #d44c47; }
+
   .center-dot {
     position: absolute; top: 50%; left: 50%;
-    width: 6px; height: 6px; border-radius: 50%;
-    background: currentColor; transform: translate(-50%, -50%);
+    width: 5px; height: 5px; border-radius: 50%;
+    transform: translate(-50%, -50%);
   }
+  body.light .center-dot, body.notion .center-dot { background: #37352f; }
+  body.dark .center-dot { background: #e8e8e3; }
+
   .tick {
-    position: absolute; top: 4px; left: 50%;
-    width: 1px; height: 8px; margin-left: -0.5px;
-    background: currentColor; opacity: 0.4;
-    transform-origin: center 66px;
+    position: absolute; top: 6px; left: 50%;
+    width: 1px; height: 6px; margin-left: -0.5px;
+    transform-origin: center 59px;
   }
-  .tick.major { height: 12px; width: 2px; margin-left: -1px; opacity: 0.8; transform-origin: center 66px; }
+  body.light .tick, body.notion .tick { background: #d4d4d0; }
+  body.dark .tick { background: #444; }
+
+  .tick.major { height: 10px; width: 1.5px; margin-left: -0.75px; }
+  body.light .tick.major, body.notion .tick.major { background: #b4b4b0; }
+  body.dark .tick.major { background: #666; }
+
   .analog-date {
-    font-size: 0.8rem; opacity: 0.5; margin-top: 10px; font-weight: 300;
+    font-size: 0.75rem; color: #787774; margin-top: 10px; font-weight: 400;
   }
+  body.dark .analog-date { color: #ffffff5e; }
 </style>
 </head>
 <body>
@@ -67,7 +87,7 @@
   const params = new URLSearchParams(location.search);
   const type = params.get('type') || 'digital';
   const tz = params.get('timezone') || 'Asia/Seoul';
-  const theme = params.get('theme') || 'dark';
+  const theme = params.get('theme') || 'notion';
   const showDate = params.get('showDate') !== 'false';
 
   document.body.classList.add(theme);
@@ -87,12 +107,14 @@
     container.className = 'analog';
     const face = document.createElement('div');
     face.className = 'analog-face';
-    for (let i = 0; i < 12; i++) {
+
+    for (let i = 0; i < 60; i++) {
       const tick = document.createElement('div');
-      tick.className = 'tick major';
-      tick.style.transform = `rotate(${i * 30}deg)`;
+      tick.className = i % 5 === 0 ? 'tick major' : 'tick';
+      tick.style.transform = `rotate(${i * 6}deg)`;
       face.appendChild(tick);
     }
+
     const hHand = document.createElement('div'); hHand.className = 'hand hand-hour';
     const mHand = document.createElement('div'); mHand.className = 'hand hand-minute';
     const sHand = document.createElement('div'); sHand.className = 'hand hand-second';
@@ -125,7 +147,7 @@
 
     function updateDigital() {
       const { h, m, s, dateStr } = getTime();
-      timeEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      timeEl.innerHTML = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}<span class="digital-seconds">${String(s).padStart(2,'0')}</span>`;
       if (showDate) dateEl.textContent = dateStr;
     }
     updateDigital();

@@ -5,44 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Progress Bar Widget</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
   body {
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Inter', sans-serif; padding: 16px;
+    font-family: 'Inter', sans-serif; padding: 20px;
   }
-  .container { width: 100%; max-width: 500px; }
+  body.light { background: #fff; color: #37352f; }
+  body.dark { background: #191919; color: #e8e8e3; }
+  body.notion { background: #f7f6f3; color: #37352f; }
+
+  .container { width: 100%; max-width: 460px; }
+
   .header {
     display: flex; justify-content: space-between; align-items: baseline;
     margin-bottom: 8px;
   }
-  .label { font-size: 0.9rem; font-weight: 600; color: #e8e8e8; }
-  .percent { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .track {
-    width: 100%; height: 18px; background: #2a2a2a;
-    border-radius: 10px; overflow: hidden; position: relative;
+  .label { font-size: 0.85rem; font-weight: 500; }
+  .percent {
+    font-size: 0.85rem; font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
+
+  .track {
+    width: 100%; height: 8px; border-radius: 4px; overflow: hidden;
+  }
+  body.light .track, body.notion .track { background: #e3e3e0; }
+  body.dark .track { background: #333; }
+
   .fill {
-    height: 100%; border-radius: 10px;
-    transition: width 1s ease;
-    background: linear-gradient(90deg, var(--c), var(--c-light));
+    height: 100%; border-radius: 4px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
   }
-  .fill::after {
-    content: ''; position: absolute; top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
-    animation: shimmer 2s infinite;
+
+  .detail {
+    margin-top: 6px; font-size: 0.75rem; color: #787774;
   }
-  @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+  body.dark .detail { color: #ffffff5e; }
+
+  .empty {
+    text-align: center; padding: 24px; color: #787774;
   }
-  .placeholder {
-    color: #888; font-size: 14px; text-align: center; padding: 20px;
+  .empty-icon { font-size: 2.4rem; margin-bottom: 8px; display: block; opacity: 0.6; }
+  .empty-text { font-size: 0.85rem; }
+  .empty-hint {
+    display: inline-block; margin-top: 6px; font-size: 0.75rem;
+    background: rgba(135,131,120,0.12); color: #9b9a97;
+    padding: 2px 7px; border-radius: 3px;
+    font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
   }
-  .placeholder span { font-size: 2rem; display: block; margin-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -51,14 +64,15 @@
   const value = parseFloat(params.get('value'));
   const max = parseFloat(params.get('max')) || 100;
   const label = params.get('label') || '';
-  const color = params.get('color') || '#6c5ce7';
+  const color = params.get('color') || '#2eaadc';
+  const theme = params.get('theme') || 'notion';
+
+  document.body.classList.add(theme);
 
   if (isNaN(value)) {
-    document.body.innerHTML = '<div class="placeholder"><span>📊</span>값을 설정해주세요<br><small style="color:#555">?value=75&max=100</small></div>';
+    document.body.innerHTML = `<div class="empty"><span class="empty-icon">📊</span><div class="empty-text">값을 설정해주세요</div><span class="empty-hint">?value=75&max=100</span></div>`;
   } else {
     const pct = Math.min(Math.round((value / max) * 100), 100);
-    const hsl = hexToHSL(color);
-    const lighter = `hsl(${hsl.h}, ${hsl.s}%, ${Math.min(hsl.l + 15, 90)}%)`;
 
     const container = document.createElement('div');
     container.className = 'container';
@@ -68,8 +82,9 @@
         <div class="percent" style="color:${color}">${pct}%</div>
       </div>
       <div class="track">
-        <div class="fill" style="--c:${color}; --c-light:${lighter}; width: 0%"></div>
+        <div class="fill" style="background:${color}; width: 0%"></div>
       </div>
+      <div class="detail">${value} / ${max}</div>
     `;
     document.body.appendChild(container);
 
@@ -78,26 +93,6 @@
         container.querySelector('.fill').style.width = pct + '%';
       }, 100);
     });
-  }
-
-  function hexToHSL(hex) {
-    hex = hex.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16) / 255;
-    const g = parseInt(hex.substring(2, 4), 16) / 255;
-    const b = parseInt(hex.substring(4, 6), 16) / 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-    if (max === min) { h = s = 0; }
-    else {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-        case g: h = ((b - r) / d + 2) / 6; break;
-        case b: h = ((r - g) / d + 4) / 6; break;
-      }
-    }
-    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
   }
 </script>
 </body>

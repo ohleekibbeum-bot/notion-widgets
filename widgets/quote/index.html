@@ -5,31 +5,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quote Widget</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Noto+Serif+KR:wght@400;700&family=Gaegu&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Serif+KR:wght@400;700&family=Gaegu:wght@400;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; }
   body {
     display: flex; align-items: center; justify-content: center;
-    padding: 24px; text-align: center;
+    padding: 24px; font-family: 'Inter', sans-serif;
   }
-  body.dark { background: #1a1a1a; color: #e8e8e8; }
-  body.light { background: #fff; color: #1a1a1a; }
-  body.minimal { background: transparent; color: #e8e8e8; }
+  body.light { background: #fff; color: #37352f; }
+  body.dark { background: #191919; color: #e8e8e3; }
+  body.notion { background: #f7f6f3; color: #37352f; }
 
   .font-sans { font-family: 'Inter', sans-serif; }
   .font-serif { font-family: 'Noto Serif KR', serif; }
   .font-handwriting { font-family: 'Gaegu', cursive; }
 
-  .quote-mark {
-    font-size: 3rem; opacity: 0.15; line-height: 1; margin-bottom: 4px;
+  .container { text-align: center; max-width: 500px; }
+
+  .quote-bar {
+    display: flex; align-items: stretch; text-align: left; gap: 14px;
   }
+
+  .quote-line {
+    width: 3px; border-radius: 2px; flex-shrink: 0;
+  }
+  body.light .quote-line, body.notion .quote-line { background: #37352f; }
+  body.dark .quote-line { background: #e8e8e3; }
+
   .quote-text {
-    font-size: 1.3rem; font-weight: 400; line-height: 1.6;
-    max-width: 500px;
+    font-size: 1.15rem; font-weight: 400; line-height: 1.7;
   }
+  .font-handwriting .quote-text { font-size: 1.4rem; }
+  .font-serif .quote-text { font-size: 1.1rem; line-height: 1.8; }
+
   .quote-author {
-    margin-top: 12px; font-size: 0.85rem; opacity: 0.5;
+    margin-top: 10px; font-size: 0.8rem; color: #787774;
+    padding-left: 17px;
   }
+  body.dark .quote-author { color: #ffffff5e; }
   .quote-author::before { content: '— '; }
 </style>
 </head>
@@ -41,17 +54,17 @@
     { text: '오늘 할 수 있는 일을 내일로 미루지 마라', author: '벤자민 프랭클린' },
     { text: '실패는 성공의 어머니', author: '속담' },
     { text: '작은 기회로부터 종종 위대한 업적이 시작된다', author: '데모스테네스' },
-    { text: '꿈을 이루고자 하는 의지가 있는 자에게 불가능이란 없다', author: '알렉산더 대왕' },
-    { text: '가장 큰 영광은 한 번도 실패하지 않음이 아니라 실패할 때마다 다시 일어서는 데에 있다', author: '공자' },
-    { text: '현재를 즐겨라', author: '호라티우스' },
     { text: '시작이 반이다', author: '아리스토텔레스' },
-    { text: '아는 것이 힘이다', author: '프랜시스 베이컨' }
+    { text: '아는 것이 힘이다', author: '프랜시스 베이컨' },
+    { text: '현재를 즐겨라', author: '호라티우스' },
+    { text: '스스로 행복하다고 생각하지 않으면 결코 행복할 수 없다', author: '퍼블릴리우스 시루스' },
+    { text: '삶이 있는 한 희망은 있다', author: '키케로' }
   ];
 
   const params = new URLSearchParams(location.search);
   const text = params.get('text');
   const author = params.get('author');
-  const theme = params.get('theme') || 'dark';
+  const theme = params.get('theme') || 'notion';
   const font = params.get('font') || 'sans';
 
   document.body.classList.add(theme);
@@ -64,10 +77,12 @@
   }
 
   const container = document.createElement('div');
-  container.className = `font-${font}`;
+  container.className = `container font-${font}`;
   container.innerHTML = `
-    <div class="quote-mark">"</div>
-    <div class="quote-text">${q.text}</div>
+    <div class="quote-bar">
+      <div class="quote-line"></div>
+      <div class="quote-text">${q.text}</div>
+    </div>
     ${q.author ? `<div class="quote-author">${q.author}</div>` : ''}
   `;
   document.body.appendChild(container);

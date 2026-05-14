@@ -5,36 +5,60 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Weather Widget</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; }
   body {
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Inter', sans-serif; padding: 16px;
+    font-family: 'Inter', sans-serif; padding: 20px;
   }
-  body.dark { background: #1a1a1a; color: #e8e8e8; }
-  body.light { background: #fff; color: #1a1a1a; }
+  body.light { background: #fff; color: #37352f; }
+  body.dark { background: #191919; color: #e8e8e3; }
+  body.notion { background: #f7f6f3; color: #37352f; }
 
-  .weather {
-    display: flex; align-items: center; gap: 20px;
-  }
-  .weather-icon { font-size: 3.2rem; line-height: 1; }
+  .weather { display: flex; align-items: center; gap: 18px; }
+
+  .weather-icon { font-size: 2.8rem; line-height: 1; }
+
+  .weather-main { }
+
   .weather-temp {
-    font-size: 2.8rem; font-weight: 700; line-height: 1;
+    font-size: 2.4rem; font-weight: 700; line-height: 1;
+    letter-spacing: -0.02em;
   }
+
   .weather-desc {
-    font-size: 0.85rem; opacity: 0.6; margin-top: 2px;
+    font-size: 0.8rem; color: #787774; margin-top: 3px; font-weight: 500;
   }
+  body.dark .weather-desc { color: #ffffff5e; }
+
   .weather-details {
-    display: flex; gap: 16px; margin-top: 8px; font-size: 0.78rem; opacity: 0.5;
+    display: flex; gap: 14px; margin-top: 8px; font-size: 0.75rem;
+    color: #787774;
   }
+  body.dark .weather-details { color: #ffffff5e; }
+
+  .weather-detail {
+    display: flex; align-items: center; gap: 3px;
+  }
+
   .loading {
-    color: #888; font-size: 14px;
+    color: #787774; font-size: 0.85rem;
+    display: flex; align-items: center; gap: 8px;
   }
-  .placeholder {
-    color: #888; font-size: 14px; text-align: center; padding: 20px;
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid #e3e3e0;
+    border-top-color: #787774; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
-  .placeholder span { font-size: 2rem; display: block; margin-bottom: 8px; }
+  body.dark .spinner { border-color: #333; border-top-color: #888; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty {
+    text-align: center; padding: 24px; color: #787774;
+  }
+  .empty-icon { font-size: 2.4rem; margin-bottom: 8px; display: block; opacity: 0.6; }
+  .empty-text { font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -42,12 +66,12 @@
   const params = new URLSearchParams(location.search);
   const lat = params.get('lat') || '37.5665';
   const lon = params.get('lon') || '126.978';
-  const theme = params.get('theme') || 'dark';
+  const theme = params.get('theme') || 'notion';
   const unit = params.get('unit') || 'celsius';
 
   document.body.classList.add(theme);
 
-  const WMO_CODES = {
+  const WMO = {
     0: { icon: '☀️', desc: '맑음' },
     1: { icon: '🌤️', desc: '대체로 맑음' },
     2: { icon: '⛅', desc: '부분적 흐림' },
@@ -63,18 +87,15 @@
     71: { icon: '🌨️', desc: '약한 눈' },
     73: { icon: '🌨️', desc: '눈' },
     75: { icon: '❄️', desc: '강한 눈' },
-    77: { icon: '🌨️', desc: '싸락눈' },
     80: { icon: '🌦️', desc: '약한 소나기' },
     81: { icon: '🌧️', desc: '소나기' },
     82: { icon: '⛈️', desc: '강한 소나기' },
-    85: { icon: '🌨️', desc: '약한 눈 소나기' },
-    86: { icon: '❄️', desc: '강한 눈 소나기' },
     95: { icon: '⛈️', desc: '뇌우' },
     96: { icon: '⛈️', desc: '우박 뇌우' },
     99: { icon: '⛈️', desc: '강한 우박 뇌우' }
   };
 
-  document.body.innerHTML = '<div class="loading">날씨 정보를 불러오는 중...</div>';
+  document.body.innerHTML = `<div class="loading"><div class="spinner"></div>날씨 정보를 불러오는 중...</div>`;
 
   const tempUnit = unit === 'fahrenheit' ? 'fahrenheit' : 'celsius';
   const apiURL = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&temperature_unit=${tempUnit}`;
@@ -83,26 +104,25 @@
     .then(r => r.json())
     .then(data => {
       const c = data.current;
-      const code = c.weather_code;
-      const info = WMO_CODES[code] || { icon: '🌡️', desc: '알 수 없음' };
-      const unitSymbol = unit === 'fahrenheit' ? '°F' : '°C';
+      const info = WMO[c.weather_code] || { icon: '🌡️', desc: '알 수 없음' };
+      const sym = unit === 'fahrenheit' ? '°F' : '°C';
 
       document.body.innerHTML = `
         <div class="weather">
           <div class="weather-icon">${info.icon}</div>
-          <div>
-            <div class="weather-temp">${Math.round(c.temperature_2m)}${unitSymbol}</div>
+          <div class="weather-main">
+            <div class="weather-temp">${Math.round(c.temperature_2m)}${sym}</div>
             <div class="weather-desc">${info.desc}</div>
             <div class="weather-details">
-              <span>💧 ${c.relative_humidity_2m}%</span>
-              <span>💨 ${c.wind_speed_10m} km/h</span>
+              <span class="weather-detail">💧 ${c.relative_humidity_2m}%</span>
+              <span class="weather-detail">💨 ${c.wind_speed_10m} km/h</span>
             </div>
           </div>
         </div>
       `;
     })
     .catch(() => {
-      document.body.innerHTML = '<div class="placeholder"><span>⚠️</span>날씨 정보를 불러올 수 없습니다</div>';
+      document.body.innerHTML = `<div class="empty"><span class="empty-icon">⚠️</span><div class="empty-text">날씨 정보를 불러올 수 없습니다</div></div>`;
     });
 </script>
 </body>
