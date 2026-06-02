@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro Widget</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+  }
+  body.light { background: #fff; color: #37352f; }
+  body.dark { background: #191919; color: #e8e8e3; }
+  body.notion { background: #f7f6f3; color: #37352f; }
+
+  .pomodoro { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+
+  .mode-label {
+    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px;
+    text-transform: uppercase; padding: 4px 12px; border-radius: 20px;
+  }
+  .mode-work { background: var(--accent-bg, #d3e5ef); color: var(--accent, #2eaadc); }
+  .mode-break { background: #dbeddb; color: #448361; }
+
+  .ring-wrap { position: relative; width: 150px; height: 150px; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; }
+  body.light .ring-bg, body.notion .ring-bg { stroke: #e3e3e0; }
+  body.dark .ring-bg { stroke: #333; }
+  .ring-fill {
+    fill: none; stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s linear;
+  }
+
+  .time-display {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); text-align: center;
+  }
+  .time-value {
+    font-size: 2.1rem; font-weight: 700;
+    font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .session-count {
+    font-size: 0.7rem; color: #787774; margin-top: 4px;
+  }
+  body.dark .session-count { color: #ffffff5e; }
+
+  .controls { display: flex; gap: 8px; }
+  .ctrl-btn {
+    padding: 8px 18px; border: none; border-radius: 8px;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: opacity 0.15s, transform 0.1s;
+  }
+  .ctrl-btn:active { transform: scale(0.95); }
+  .btn-primary { color: #fff; }
+  .btn-secondary {
+    background: transparent;
+  }
+  body.light .btn-secondary, body.notion .btn-secondary {
+    background: #efefef; color: #37352f;
+  }
+  body.dark .btn-secondary { background: #2a2a2a; color: #e8e8e3; }
+</style>
+</head>
+<body>
+<script>
+  const params = new URLSearchParams(location.search);
+  const workMin = parseInt(params.get('work')) || 25;
+  const breakMin = parseInt(params.get('break')) || 5;
+  const theme = params.get('theme') || 'notion';
+  const color = params.get('color') || '#2eaadc';
+
+  document.body.classList.add(theme);
+  document.body.style.setProperty('--accent', color);
+
+  const R = 66;
+  const CIRC = 2 * Math.PI * R;
+
+  document.body.innerHTML = `
+    <div class="pomodoro">
+      <div class="mode-label mode-work" id="mode">집중 시간</div>
+      <div class="ring-wrap">
+        <svg width="150" height="150">
+          <circle class="ring-bg" cx="75" cy="75" r="${R}" stroke-width="8"></circle>
+          <circle class="ring-fill" id="ring" cx="75" cy="75" r="${R}" stroke-width="8"
+            stroke="${color}" stroke-dasharray="${CIRC}" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="time-display">
+          <div class="time-value" id="time">${String(workMin).padStart(2,'0')}:00</div>
+          <div class="session-count" id="count">🍅 0회 완료</div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="ctrl-btn btn-primary" id="startBtn" style="background:${color}">시작</button>
+        <button class="ctrl-btn btn-secondary" id="resetBtn">리셋</button>
+      </div>
+    </div>
+  `;
+
+  const timeEl = document.getElementById('time');
+  const ringEl = document.getElementById('ring');
+  const modeEl = document.getElementById('mode');
+  const countEl = document.getElementById('count');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  let isWork = true;
+  let totalSec = workMin * 60;
+  let remaining = totalSec;
+  let running = false;
+  let timer = null;
+  let completed = 0;
+
+  function format(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function updateDisplay() {
+    timeEl.textContent = format(remaining);
+    const offset = CIRC * (1 - remaining / totalSec);
+    ringEl.style.strokeDashoffset = offset;
+  }
+
+  function switchMode() {
+    isWork = !isWork;
+    if (isWork) {
+      modeEl.textContent = '집중 시간';
+      modeEl.className = 'mode-label mode-work';
+      ringEl.setAttribute('stroke', color);
+      totalSec = workMin * 60;
+    } else {
+      completed++;
+      countEl.textContent = `🍅 ${completed}회 완료`;
+      modeEl.textContent = '휴식 시간';
+      modeEl.className = 'mode-label mode-break';
+      ringEl.setAttribute('stroke', '#448361');
+      totalSec = breakMin * 60;
+    }
+    remaining = totalSec;
+    updateDisplay();
+  }
+
+  function tick() {
+    if (remaining > 0) {
+      remaining--;
+      updateDisplay();
+    } else {
+      // 알림음 (간단한 비프)
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 880; gain.gain.value = 0.1;
+        osc.start(); osc.stop(ctx.currentTime + 0.3);
+      } catch(e) {}
+      switchMode();
+    }
+  }
+
+  startBtn.onclick = () => {
+    if (running) {
+      clearInterval(timer);
+      running = false;
+      startBtn.textContent = '시작';
+    } else {
+      timer = setInterval(tick, 1000);
+      running = true;
+      startBtn.textContent = '일시정지';
+    }
+  };
+
+  resetBtn.onclick = () => {
+    clearInterval(timer);
+    running = false;
+    isWork = true;
+    totalSec = workMin * 60;
+    remaining = totalSec;
+    modeEl.textContent = '집중 시간';
+    modeEl.className = 'mode-label mode-work';
+    ringEl.setAttribute('stroke', color);
+    startBtn.textContent = '시작';
+    updateDisplay();
+  };
+
+  updateDisplay();
+</script>
+</body>
+</html>

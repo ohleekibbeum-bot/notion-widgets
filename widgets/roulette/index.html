@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roulette Widget</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif; padding: 12px;
+  }
+  body.light { background: #fff; color: #37352f; }
+  body.dark { background: #191919; color: #e8e8e3; }
+  body.notion { background: #f7f6f3; color: #37352f; }
+
+  .roulette { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+
+  .title { font-size: 0.9rem; font-weight: 600; }
+
+  .wheel-wrap { position: relative; width: 200px; height: 200px; }
+
+  .pointer {
+    position: absolute; top: -2px; left: 50%;
+    transform: translateX(-50%); z-index: 3;
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 18px solid #d44c47;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+  }
+
+  canvas {
+    border-radius: 50%;
+    transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+  }
+  body.light canvas, body.notion canvas { box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+  body.dark canvas { box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+
+  .center-btn {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px; height: 50px; border-radius: 50%;
+    border: 3px solid #fff; cursor: pointer; z-index: 2;
+    font-size: 0.7rem; font-weight: 700; color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    transition: transform 0.1s;
+  }
+  .center-btn:active { transform: translate(-50%, -50%) scale(0.92); }
+  .center-btn:disabled { opacity: 0.6; cursor: default; }
+
+  .result {
+    font-size: 1rem; font-weight: 700; min-height: 24px;
+    padding: 4px 14px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .result.show { opacity: 1; }
+  body.light .result.show, body.notion .result.show { background: #fdecc8; color: #cb912f; }
+  body.dark .result.show { background: #2a2416; color: #ffd97d; }
+
+  .empty {
+    text-align: center; color: #787774; font-size: 0.85rem; padding: 20px;
+  }
+  .empty-icon { font-size: 2.4rem; display: block; margin-bottom: 8px; opacity: 0.6; }
+  .empty-hint {
+    display: inline-block; margin-top: 6px; font-size: 0.75rem;
+    background: rgba(135,131,120,0.12); color: #9b9a97;
+    padding: 2px 7px; border-radius: 3px;
+    font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  }
+</style>
+</head>
+<body>
+<script>
+  const params = new URLSearchParams(location.search);
+  const itemsStr = params.get('items');
+  const title = params.get('title') || '';
+  const theme = params.get('theme') || 'notion';
+
+  document.body.classList.add(theme);
+
+  const PALETTE = ['#2eaadc','#448361','#cb912f','#d44c47','#9065b0','#c14c8a','#d9730d','#337ea9'];
+
+  if (!itemsStr) {
+    document.body.innerHTML = `<div class="empty"><span class="empty-icon">🎯</span><div>항목을 설정해주세요</div><span class="empty-hint">?items=치킨,피자,햄버거</span></div>`;
+  } else {
+    const items = itemsStr.split(',').map(s => s.trim()).filter(Boolean);
+
+    if (items.length < 2) {
+      document.body.innerHTML = `<div class="empty"><span class="empty-icon">🎯</span><div>항목을 2개 이상 입력해주세요</div></div>`;
+    } else {
+      document.body.innerHTML = `
+        <div class="roulette">
+          ${title ? `<div class="title">${title}</div>` : ''}
+          <div class="wheel-wrap">
+            <div class="pointer"></div>
+            <canvas id="wheel" width="200" height="200"></canvas>
+            <button class="center-btn" id="spinBtn">SPIN</button>
+          </div>
+          <div class="result" id="result"></div>
+        </div>
+      `;
+
+      const canvas = document.getElementById('wheel');
+      const ctx = canvas.getContext('2d');
+      const spinBtn = document.getElementById('spinBtn');
+      const resultEl = document.getElementById('result');
+      const cx = 100, cy = 100, radius = 100;
+      const n = items.length;
+      const arc = (2 * Math.PI) / n;
+
+      function drawWheel() {
+        items.forEach((item, i) => {
+          const start = i * arc - Math.PI / 2;
+          const end = start + arc;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, radius, start, end);
+          ctx.closePath();
+          ctx.fillStyle = PALETTE[i % PALETTE.length];
+          ctx.fill();
+
+          // 텍스트
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(start + arc / 2);
+          ctx.textAlign = 'right';
+          ctx.fillStyle = '#fff';
+          ctx.font = '600 12px Inter, sans-serif';
+          const label = item.length > 8 ? item.slice(0, 7) + '…' : item;
+          ctx.fillText(label, radius - 14, 4);
+          ctx.restore();
+        });
+        // 가운데 버튼 색
+        spinBtn.style.background = PALETTE[0];
+      }
+
+      drawWheel();
+
+      let currentRotation = 0;
+      let spinning = false;
+
+      spinBtn.onclick = () => {
+        if (spinning) return;
+        spinning = true;
+        spinBtn.disabled = true;
+        resultEl.classList.remove('show');
+
+        const winnerIdx = Math.floor(Math.random() * n);
+        // 당첨 섹터의 중앙이 포인터(상단, -90도)에 오도록 회전
+        const targetAngle = 360 * 5 + (360 - (winnerIdx * (360 / n) + (360 / n) / 2));
+        currentRotation += targetAngle;
+
+        canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+        setTimeout(() => {
+          resultEl.textContent = `🎉 ${items[winnerIdx]}`;
+          resultEl.classList.add('show');
+          spinning = false;
+          spinBtn.disabled = false;
+          // 회전값 정규화
+          currentRotation = currentRotation % 360;
+          canvas.style.transition = 'none';
+          canvas.style.transform = `rotate(${currentRotation}deg)`;
+          setTimeout(() => {
+            canvas.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+          }, 50);
+        }, 4100);
+      };
+    }
+  }
+</script>
+</body>
+</html>

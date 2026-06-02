@@ -8,7 +8,9 @@ const DEMO = {
   'progress-bar': '?value=73&max=100&label=프로젝트 진행률&color=%232eaadc&theme=notion',
   'quote': '?text=작은 것에도 감사하면 큰 행복이 찾아옵니다&author=속담&theme=notion&font=serif',
   'image-slider': '?images=https://picsum.photos/seed/cute1/600/300,https://picsum.photos/seed/cute2/600/300,https://picsum.photos/seed/cute3/600/300&interval=2500&radius=4',
-  'weather': '?lat=37.5665&lon=126.978&theme=notion'
+  'weather': '?lat=37.5665&lon=126.978&theme=notion',
+  'pomodoro': '?work=25&break=5&theme=notion&color=%232eaadc',
+  'roulette': '?items=치킨,피자,햄버거,초밥,파스타,떡볶이&title=오늘 점심 메뉴&theme=notion'
 };
 
 // ===== 큐레이션 GIF 갤러리 (API 불필요) =====
@@ -170,6 +172,31 @@ const widgets = [
       { key: 'lon', label: '경도', type: 'text', placeholder: '126.978 (서울)' },
       { key: 'theme', label: '테마', type: 'select', options: ['light', 'dark', 'notion'] },
       { key: 'unit', label: '온도 단위', type: 'select', options: ['celsius', 'fahrenheit'] }
+    ]
+  },
+  {
+    id: 'pomodoro',
+    icon: '🍅',
+    name: '뽀모도로 타이머',
+    desc: '집중과 휴식을 반복하는 생산성 타이머',
+    tag: 'time', tagLabel: '시간',
+    configs: [
+      { key: 'work', label: '집중 시간 (분)', type: 'number', placeholder: '25' },
+      { key: 'break', label: '휴식 시간 (분)', type: 'number', placeholder: '5' },
+      { key: 'theme', label: '테마', type: 'select', options: ['light', 'dark', 'notion'] },
+      { key: 'color', label: '강조 색상', type: 'color', default: '#2eaadc' }
+    ]
+  },
+  {
+    id: 'roulette',
+    icon: '🎯',
+    name: '랜덤 룰렛',
+    desc: '항목을 넣고 돌려서 무작위로 뽑습니다',
+    tag: 'text', tagLabel: '재미',
+    configs: [
+      { key: 'items', label: '항목 (쉼표로 구분)', type: 'text', placeholder: '치킨, 피자, 햄버거' },
+      { key: 'title', label: '제목', type: 'text', placeholder: '오늘 점심 메뉴' },
+      { key: 'theme', label: '테마', type: 'select', options: ['light', 'dark', 'notion'] }
     ]
   }
 ];
